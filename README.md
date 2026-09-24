@@ -83,9 +83,11 @@ flowchart TD
 
 | Model | Target | Algorithm | Accuracy / Metric |
 |---|---|---|---|
-| **Risk Classifier** | Pothole Emergence Risk (High/Med/Low) | Random Forest Classifier | **91% Precision/Recall** (Balanced) |
-| **Decay Regressor** | Time-to-Failure (Months to Failure) | Random Forest Regressor | **R² = 0.986**, MAE = 1.79 months |
-| **Cost Regressor** | Reactive Repair Cost (₹ INR) | Random Forest Regressor | **R² = 0.990** |
+| **Risk Classifier** | Pothole Emergence Risk (High/Med/Low) | Random Forest Classifier | **Test Accuracy: 91.43%** (64/70 correct)<br>Weighted F1: 91.61% \| 5-Fold CV: 96.86% ± 3.05% |
+| **Decay Regressor** | Time-to-Failure (Months to Failure) | Random Forest Regressor | **R² = 0.9858**, MAE = 1.79 months, RMSE = 4.08 months |
+| **Cost Regressor** | Reactive Repair Cost (₹ INR) | Random Forest Regressor | **R² = 0.9904**, MAE = ₹88.34 Lakhs, MAPE = 10.76% |
+
+> *Detailed mathematical proofs, confusion matrices, baseline comparisons, and feature importance analyses are documented in [`MODEL_RESULTS.md`](./MODEL_RESULTS.md).*
 
 ---
 
