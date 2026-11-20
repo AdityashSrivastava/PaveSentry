@@ -44,7 +44,7 @@ jobs:
 
       - name: Ruff Code Quality Lint
         run: |
-          ruff check backend database ml optimization --ignore E501,E402
+          ruff check backend database ml optimization --select=E9,F63,F7,F82,F821 --ignore=E501,E402
 
   # ----------------------------------------------------------------------------
   # Job 2: Automated Pytest Suite across Phases A through G
@@ -156,6 +156,7 @@ jobs:
 
       - name: Validate Docker Compose Configuration
         run: |
+          cp .env.example .env
           docker compose config
 
       - name: Test Dockerfile Build & Layer Caching

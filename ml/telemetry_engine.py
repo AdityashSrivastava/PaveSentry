@@ -5,16 +5,15 @@ Conforms to World Bank Technical Paper No. 46 & ASTM E1926-08 (Computing Interna
 Translates high-frequency accelerometer (ax, ay, az) and gyroscope data from Delhi DTC electric buses
 and PWD survey vans into real-time International Roughness Index (IRI) and automated pothole impact alerts.
 """
-from typing import Dict, Any, List, Optional, Tuple
-import math
-import time
-import random
-from datetime import datetime, timezone
-from pathlib import Path
 import json
+import math
+import random
+import time
+from datetime import UTC, datetime
+from typing import Any
 
-from database.db_manager import get_segment_by_id, get_all_segments
-from database.postgis_manager import snap_gps_to_corridor, haversine_distance_m
+from database.db_manager import get_segment_by_id
+from database.postgis_manager import snap_gps_to_corridor
 
 # World Bank Quarter-Car Empirical Calibration Constant for Delhi Bus Wheelbases (m/km per g)
 QUARTER_CAR_CALIBRATION_KV = 8.42
@@ -61,9 +60,9 @@ class ConnectedFleetTelemetryEngine:
     _instance = None
 
     def __init__(self):
-        self._live_telemetry_cache: Dict[str, Dict[str, Any]] = {}
-        self._recent_pothole_spikes: List[Dict[str, Any]] = []
-        self._trip_history: Dict[str, List[Dict[str, Any]]] = {}
+        self._live_telemetry_cache: dict[str, dict[str, Any]] = {}
+        self._recent_pothole_spikes: list[dict[str, Any]] = []
+        self._trip_history: dict[str, list[dict[str, Any]]] = {}
 
         # Initialize fleet with baseline locations on Delhi arterials
         self._init_fleet_positions()
@@ -106,7 +105,7 @@ class ConnectedFleetTelemetryEngine:
                 "is_pothole_spike": False
             }
 
-    def process_telemetry_packet(self, packet: Dict[str, Any]) -> Dict[str, Any]:
+    def process_telemetry_packet(self, packet: dict[str, Any]) -> dict[str, Any]:
         """
         Processes a raw telemetric packet from a vehicle's IoT onboard unit:
         1. Gravity baseline normalization
@@ -221,15 +220,15 @@ class ConnectedFleetTelemetryEngine:
 
         return telemetry_record
 
-    def get_live_fleet_telemetry(self) -> List[Dict[str, Any]]:
+    def get_live_fleet_telemetry(self) -> list[dict[str, Any]]:
         """Returns the real-time operational status and telemetry of all monitored DTC buses."""
         return list(self._live_telemetry_cache.values())
 
-    def get_pothole_spikes(self) -> List[Dict[str, Any]]:
+    def get_pothole_spikes(self) -> list[dict[str, Any]]:
         """Returns detected high-G pothole impact shock events."""
         return self._recent_pothole_spikes
 
-    def get_vehicle_waveform(self, vehicle_id: str) -> List[Dict[str, Any]]:
+    def get_vehicle_waveform(self, vehicle_id: str) -> list[dict[str, Any]]:
         """Returns recent accelerometer waveform points for oscilloscope graph."""
         return self._trip_history.get(vehicle_id, [])
 
@@ -239,7 +238,7 @@ class ConnectedFleetTelemetryEngine:
         vehicle_id: str = "DTC-DL1PC-4021",
         speed_kmh: float = 44.0,
         samples_count: int = 15
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulates a live continuous DTC electric bus trip along a selected Delhi road corridor.
         Interpolates along the corridor's true coordinates, synthesizing authentic axle bounce vibrations
@@ -298,7 +297,7 @@ class ConnectedFleetTelemetryEngine:
 
             packet = {
                 "vehicle_id": vehicle_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "longitude": cur_lon,
                 "latitude": cur_lat,
                 "speed_kmh": speed_kmh + random.uniform(-3.0, 3.0),

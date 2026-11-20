@@ -1,17 +1,17 @@
-import os
 import sys
-import joblib
-import sqlite3
-import numpy as np
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
 from database.db_manager import get_all_segments, get_connection
-from ml.train_models import extract_features, MODELS_DIR
+from ml.train_models import MODELS_DIR, extract_features
+
 
 def run_predictions_and_update_db():
     """

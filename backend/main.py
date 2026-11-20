@@ -1,13 +1,13 @@
 import os
+import shutil
 import sys
 import time
 import uuid
-import shutil
 from pathlib import Path
-from typing import Optional, List
 
 # Starlette 1.x / FastAPI APIRouter on_startup compatibility shim
 import starlette.routing
+
 _orig_router_init = starlette.routing.Router.__init__
 def _compat_router_init(self, *args, **kwargs):
     kwargs.pop("on_startup", None)
@@ -17,119 +17,125 @@ starlette.routing.Router.__init__ = _compat_router_init
 if not hasattr(starlette.routing.Router, "add_event_handler"):
     starlette.routing.Router.add_event_handler = lambda self, event_type, func: None
 
-from fastapi import FastAPI, HTTPException, Body, Depends, Request, Response, status, File, UploadFile, Form
+from fastapi import (
+    Body,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
+
 if not hasattr(FastAPI, "max_body_size"):
     FastAPI.max_body_size = None
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
 import io
 import json
+
 from PIL import Image
 
-from database.db_manager import (
-    get_all_segments,
-    get_segment_by_id,
-    get_segments_geojson,
-    get_network_stats,
-    init_db,
-    create_pothole_report,
-    get_pothole_reports,
-    update_pothole_status,
-    create_audit_validation,
-    get_audit_validations,
-    get_survey_uploads,
-    find_nearest_segment,
-    get_user_by_email,
-    create_user,
-    update_user_last_login,
-    get_work_orders,
-    get_work_order_by_id,
-    create_work_order,
-    update_work_order_stage,
-    get_kanban_summary_stats,
-    get_dlp_incidents,
-    update_dlp_incident_status
-)
-from backend.dsr_catalog import get_all_dsr_items, generate_bill_of_quantities
-from backend.dlp_watchdog import (
-    inspect_pothole_for_dlp_breach,
-    get_active_dlp_contracts,
-    scan_all_open_potholes_for_dlp
-)
 from backend.auth import (
-    get_current_user,
-    get_optional_user,
-    require_role,
-    verify_password,
-    hash_password,
-    create_access_token,
-    seed_default_users,
     COOKIE_NAME,
-    canonicalize_role,
-    ROLE_PWD_ENGINEER,
-    ROLE_MCD_PLANNER,
     ROLE_CRRI_AUDITOR,
     ROLE_DISPLAY_NAMES,
-    ROLE_PERMISSIONS
+    ROLE_MCD_PLANNER,
+    ROLE_PERMISSIONS,
+    ROLE_PWD_ENGINEER,
+    canonicalize_role,
+    create_access_token,
+    get_current_user,
+    hash_password,
+    require_role,
+    seed_default_users,
+    verify_password,
 )
-from backend.surveys import ingest_survey_file
+from backend.citizen_portal import submit_citizen_pothole, track_citizen_ticket
+from backend.dlp_watchdog import (
+    get_active_dlp_contracts,
+    inspect_pothole_for_dlp_breach,
+    scan_all_open_potholes_for_dlp,
+)
+from backend.dsr_catalog import generate_bill_of_quantities, get_all_dsr_items
 from backend.reports import (
+    generate_executive_tender_pdf,
+    generate_multi_year_excel_cip,
     generate_schedule_csv,
     generate_schedule_excel,
-    generate_executive_tender_pdf,
-    generate_multi_year_excel_cip
 )
-from ml.predict import run_predictions_and_update_db
-from ml.train_models import train_and_save_models
-from ml.vision_detector import get_vision_detector
-from optimization.scheduler import optimize_maintenance_schedule
-from optimization.decay import (
-    calculate_stress_factor,
-    simulate_cost_of_inaction,
-    simulate_network_cost_of_inaction,
-    calculate_weibull_decay,
-    calculate_markov_transitions,
-    calculate_remaining_service_life
-)
-from optimization.multi_year_optimizer import (
-    optimize_multi_year_capital_plan,
-    simulate_multi_year_scenarios
-)
-from ml.xai_engine import (
-    explain_corridor_risk,
-    get_global_shap_importance,
-    simulate_intervention_counterfactual
+from backend.surveys import ingest_survey_file
+from data.fetch_real_delhi_data import fetch_live_delhi_weather
+from data.seed_db import seed_database
+from database.audit_chain import get_audit_ledger
+from database.db_manager import (
+    create_audit_validation,
+    create_pothole_report,
+    create_user,
+    create_work_order,
+    find_nearest_segment,
+    get_all_segments,
+    get_audit_validations,
+    get_dlp_incidents,
+    get_kanban_summary_stats,
+    get_network_stats,
+    get_pothole_reports,
+    get_segment_by_id,
+    get_segments_geojson,
+    get_survey_uploads,
+    get_user_by_email,
+    get_work_orders,
+    init_db,
+    update_dlp_incident_status,
+    update_pothole_status,
+    update_user_last_login,
+    update_work_order_stage,
 )
 from database.postgis_manager import (
     get_postgis_engine,
     query_corridors_radius,
-    snap_gps_to_corridor
 )
-from ml.telemetry_engine import (
-    get_telemetry_engine,
-    DTC_FLEET_PRESETS
+from ml.predict import run_predictions_and_update_db
+from ml.telemetry_engine import get_telemetry_engine
+from ml.train_models import train_and_save_models
+from ml.vision_detector import get_vision_detector
+from ml.waterlogging_engine import (
+    DELHI_WATERLOGGING_HOTSPOTS,
+    calculate_waterlogging_risk,
+    get_network_waterlogging_summary,
+)
+from ml.xai_engine import (
+    explain_corridor_risk,
+    get_global_shap_importance,
+    simulate_intervention_counterfactual,
+)
+from optimization.decay import (
+    calculate_markov_transitions,
+    calculate_remaining_service_life,
+    calculate_stress_factor,
+    calculate_weibull_decay,
+    simulate_cost_of_inaction,
+    simulate_network_cost_of_inaction,
 )
 from optimization.green_roads import (
     calculate_corridor_carbon,
-    get_treatment_options_comparison,
+    get_green_certificate,
     get_network_green_esg_summary,
-    get_green_certificate
+    get_treatment_options_comparison,
 )
-from backend.citizen_portal import submit_citizen_pothole, track_citizen_ticket
-from ml.waterlogging_engine import (
-    calculate_waterlogging_risk,
-    get_network_waterlogging_summary,
-    DELHI_WATERLOGGING_HOTSPOTS
+from optimization.multi_year_optimizer import (
+    optimize_multi_year_capital_plan,
+    simulate_multi_year_scenarios,
 )
-from database.audit_chain import get_audit_ledger
-from data.seed_db import seed_database
-from data.fetch_real_delhi_data import fetch_live_delhi_weather
+from optimization.scheduler import optimize_maintenance_schedule
 
 _weather_cache = {"data": None, "timestamp": 0.0}
 
@@ -189,7 +195,7 @@ def readiness_probe():
         else:
             checks["database"] = "empty"
     except Exception as e:
-        checks["database"] = f"failed: {str(e)}"
+        checks["database"] = f"failed: {e!s}"
         is_ready = False
 
     # 2. PostGIS spatial engine check
@@ -198,7 +204,7 @@ def readiness_probe():
         status_info = pg.get_engine_status()
         checks["postgis_engine"] = f"ok ({status_info.get('spatial_index_type', 'GIST')})"
     except Exception as e:
-        checks["postgis_engine"] = f"warning: {str(e)}"
+        checks["postgis_engine"] = f"warning: {e!s}"
 
     # 3. ML Models check
     checks["ml_models"] = "ok (calibrated pavement risk pipeline)"
@@ -248,13 +254,13 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: str
     role: str = "pwd_engineer"
-    division: Optional[str] = "Delhi PWD"
+    division: str | None = "Delhi PWD"
 
 class AuditValidationRequest(BaseModel):
     segment_id: str
     measured_iri: float
     measured_pci: float
-    audit_notes: Optional[str] = ""
+    audit_notes: str | None = ""
 
 class PotholeStatusUpdate(BaseModel):
     status: str
@@ -263,13 +269,13 @@ class OptimizationRequest(BaseModel):
     annual_budget: float = 100000000.0  # ₹10 Crores default
     max_km_per_month: float = 15.0
     max_months: int = 12
-    zone: Optional[str] = None
+    zone: str | None = None
 
 class MultiYearOptimizationRequest(BaseModel):
     annual_budget: float = 100000000.0  # ₹10 Crores default per year
     horizon_years: int = 5              # 3 or 5 years
     max_km_per_year: float = 160.0
-    zone: Optional[str] = None
+    zone: str | None = None
     discount_rate: float = 0.06
     inflation_rate: float = 0.055
 
@@ -277,47 +283,47 @@ class MultiYearScenariosRequest(BaseModel):
     annual_budget: float = 100000000.0  # ₹10 Crores baseline
     horizon_years: int = 5
     max_km_per_year: float = 160.0
-    zone: Optional[str] = None
+    zone: str | None = None
     discount_rate: float = 0.06
     inflation_rate: float = 0.055
 
 class CostOfInactionRequest(BaseModel):
-    segment_id: Optional[str] = None
-    zone: Optional[str] = None
+    segment_id: str | None = None
+    zone: str | None = None
     horizon_years: int = 5
 
 class CreateWorkOrderRequest(BaseModel):
     segment_id: str
-    road_name: Optional[str] = None
-    city_zone: Optional[str] = None
-    pwd_division: Optional[str] = None
-    tender_code: Optional[str] = None
-    contractor_name: Optional[str] = "To Be Assigned via e-Tender"
-    contractor_contact: Optional[str] = ""
-    contract_value_inr: Optional[float] = 1000000.0
-    stage: Optional[str] = "Reported"
-    treatment_type: Optional[str] = "Preventive Micro-Surfacing (IRC:SP:81)"
-    priority_level: Optional[str] = "Medium"
-    sla_target_days: Optional[int] = 14
-    dlp_months: Optional[int] = 36
-    notes: Optional[str] = ""
+    road_name: str | None = None
+    city_zone: str | None = None
+    pwd_division: str | None = None
+    tender_code: str | None = None
+    contractor_name: str | None = "To Be Assigned via e-Tender"
+    contractor_contact: str | None = ""
+    contract_value_inr: float | None = 1000000.0
+    stage: str | None = "Reported"
+    treatment_type: str | None = "Preventive Micro-Surfacing (IRC:SP:81)"
+    priority_level: str | None = "Medium"
+    sla_target_days: int | None = 14
+    dlp_months: int | None = 36
+    notes: str | None = ""
 
 class UpdateWorkOrderStageRequest(BaseModel):
     stage: str
-    notes: Optional[str] = None
-    updated_by: Optional[str] = None
+    notes: str | None = None
+    updated_by: str | None = None
 
 class GenerateBoqRequest(BaseModel):
-    segment_id: Optional[str] = None
-    road_name: Optional[str] = "Delhi NCT Road Corridor"
+    segment_id: str | None = None
+    road_name: str | None = "Delhi NCT Road Corridor"
     length_km: float = 2.5
     lanes: int = 4
     treatment_type: str = "Preventive Micro-Surfacing & Slurry Seal (IRC:SP:81)"
-    city_zone: Optional[str] = "Central Delhi"
+    city_zone: str | None = "Central Delhi"
 
 class UpdateDlpStatusRequest(BaseModel):
     status: str
-    notes: Optional[str] = None
+    notes: str | None = None
 
 class CounterfactualRequest(BaseModel):
     segment_id: str
@@ -337,9 +343,9 @@ class TelemetryPacketRequest(BaseModel):
 
 class SimulateTripRequest(BaseModel):
     segment_id: str
-    vehicle_id: Optional[str] = "DTC-DL1PC-4021"
-    speed_kmh: Optional[float] = 42.0
-    samples_count: Optional[int] = 15
+    vehicle_id: str | None = "DTC-DL1PC-4021"
+    speed_kmh: float | None = 42.0
+    samples_count: int | None = 15
 
 # ==========================================================================
 # Lifecycle Events
@@ -540,7 +546,7 @@ async def api_upload_survey(
         report["summary"] = dict(report)
         return report
     except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Survey Ingestion Failed: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"Survey Ingestion Failed: {e!s}")
 
 @app.get("/api/surveys/history")
 def api_get_survey_history(user: dict = Depends(get_current_user)):
@@ -555,12 +561,12 @@ def api_get_survey_history(user: dict = Depends(get_current_user)):
 async def api_report_pothole(
     latitude: float = Form(...),
     longitude: float = Form(...),
-    road_name: Optional[str] = Form(None),
+    road_name: str | None = Form(None),
     severity: str = Form("Medium"),
-    depth_mm: Optional[float] = Form(35.0),
-    width_cm: Optional[float] = Form(40.0),
-    notes: Optional[str] = Form(""),
-    photo: Optional[UploadFile] = File(None),
+    depth_mm: float | None = Form(35.0),
+    width_cm: float | None = Form(40.0),
+    notes: str | None = Form(""),
+    photo: UploadFile | None = File(None),
     user: dict = Depends(get_current_user)
 ):
     """
@@ -725,9 +731,9 @@ async def api_vision_analyze(
     calibration_mode: str = Form("auto_perspective"),
     camera_height_m: float = Form(1.35),
     camera_tilt_deg: float = Form(18.0),
-    reference_type: Optional[str] = Form(None),
-    reference_width_mm: Optional[float] = Form(None),
-    manual_gsd_cm_px: Optional[float] = Form(None)
+    reference_type: str | None = Form(None),
+    reference_width_mm: float | None = Form(None),
+    manual_gsd_cm_px: float | None = Form(None)
 ):
     """
     Computer Vision Pothole & Multi-Distress Characterization (YOLOv8 Edge / Server).
@@ -750,7 +756,7 @@ async def api_vision_analyze(
     try:
         img_pil = Image.open(io.BytesIO(content)).convert("RGB")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Cannot decode image file: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Cannot decode image file: {e!s}")
 
     detector = get_vision_detector()
     result = detector.analyze_image(
@@ -808,7 +814,7 @@ async def api_vision_analyze_video(
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Video Analysis Failed: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"Video Analysis Failed: {e!s}")
     finally:
         if temp_path.exists():
             try:
@@ -817,7 +823,7 @@ async def api_vision_analyze_video(
                 pass
 
 @app.get("/api/potholes")
-def api_get_potholes(status: Optional[str] = None, zone: Optional[str] = None):
+def api_get_potholes(status: str | None = None, zone: str | None = None):
     """Retrieves reported potholes with optional lifecycle status and administrative zone filters."""
     reports = get_pothole_reports(status=status, zone=zone, limit=100)
     for r in reports:
@@ -881,7 +887,7 @@ def api_audit_validate(
     }
 
 @app.get("/api/audit/validations")
-def api_get_audit_validations(segment_id: Optional[str] = None):
+def api_get_audit_validations(segment_id: str | None = None):
     """Retrieves list of official CSIR-CRRI audit certificates."""
     audits = get_audit_validations(segment_id=segment_id, limit=50)
     return {"status": "success", "count": len(audits), "audits": audits}
@@ -942,7 +948,7 @@ def api_trigger_prediction(user: dict = Depends(require_role([ROLE_PWD_ENGINEER,
 # ==========================================================================
 
 @app.get("/api/segments")
-def api_get_segments(zone: Optional[str] = None):
+def api_get_segments(zone: str | None = None):
     try:
         segments = get_all_segments(zone=zone)
         return {"count": len(segments), "segments": segments}
@@ -950,14 +956,14 @@ def api_get_segments(zone: Optional[str] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/segments/geojson")
-def api_get_segments_geojson(zone: Optional[str] = None):
+def api_get_segments_geojson(zone: str | None = None):
     try:
         return get_segments_geojson(zone=zone)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/dashboard/stats")
-def api_get_stats(zone: Optional[str] = None):
+def api_get_stats(zone: str | None = None):
     try:
         return get_network_stats(zone=zone)
     except Exception as e:
@@ -1044,7 +1050,7 @@ def api_simulate_inaction(req: CostOfInactionRequest = Body(...)):
             sim = simulate_network_cost_of_inaction(segments, horizon_years=req.horizon_years)
             return {"status": "success", "mode": "network_aggregate", "simulation": sim}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Cost of Inaction Simulation Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Cost of Inaction Simulation Failed: {e!s}")
 
 @app.get("/api/decay/corridor/{segment_id}/rsl")
 def api_get_corridor_rsl(segment_id: str):
@@ -1073,7 +1079,7 @@ def api_optimize_multi_year(req: MultiYearOptimizationRequest = Body(...)):
         )
         return {"status": "success", "plan": plan}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Multi-Year Optimization Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Multi-Year Optimization Failed: {e!s}")
 
 @app.post("/api/optimization/multi-year/scenarios")
 def api_optimize_multi_year_scenarios(req: MultiYearScenariosRequest = Body(...)):
@@ -1093,14 +1099,14 @@ def api_optimize_multi_year_scenarios(req: MultiYearScenariosRequest = Body(...)
         )
         return {"status": "success", "scenarios_comparison": result}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Scenario Simulation Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Scenario Simulation Failed: {e!s}")
 
 @app.get("/api/export/multi-year-excel")
 def api_export_multi_year_excel(
     annual_budget: float = 100000000.0,
     horizon_years: int = 5,
     max_km_per_year: float = 160.0,
-    zone: Optional[str] = None,
+    zone: str | None = None,
     discount_rate: float = 0.06,
     inflation_rate: float = 0.055
 ):
@@ -1139,7 +1145,7 @@ def api_export_csv(
     annual_budget: float = 100000000.0,
     max_km_per_month: float = 15.0,
     max_months: int = 12,
-    zone: Optional[str] = None
+    zone: str | None = None
 ):
     try:
         result = optimize_maintenance_schedule(
@@ -1167,7 +1173,7 @@ def api_export_excel(
     annual_budget: float = 100000000.0,
     max_km_per_month: float = 15.0,
     max_months: int = 12,
-    zone: Optional[str] = None
+    zone: str | None = None
 ):
     try:
         result = optimize_maintenance_schedule(
@@ -1195,7 +1201,7 @@ def api_export_pdf(
     annual_budget: float = 100000000.0,
     max_km_per_month: float = 15.0,
     max_months: int = 12,
-    zone: Optional[str] = None
+    zone: str | None = None
 ):
     try:
         result = optimize_maintenance_schedule(
@@ -1225,9 +1231,9 @@ def api_export_pdf(
 
 @app.get("/api/kanban/work-orders")
 def api_get_work_orders(
-    stage: Optional[str] = None,
-    zone: Optional[str] = None,
-    sla_status: Optional[str] = None
+    stage: str | None = None,
+    zone: str | None = None,
+    sla_status: str | None = None
 ):
     """Retrieves work orders organized across lifecycle stages (Reported -> Inspected -> Tender Issued -> Under Repair -> Audited & Closed)."""
     try:
@@ -1260,7 +1266,7 @@ def api_update_work_order_stage(wo_id: str, req: UpdateWorkOrderStageRequest = B
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/kanban/stats")
-def api_get_kanban_stats(zone: Optional[str] = None):
+def api_get_kanban_stats(zone: str | None = None):
     """Retrieves real-time SLA compliance, stage bottlenecks, and DLP active warranty statistics."""
     try:
         stats = get_kanban_summary_stats(zone=zone)
@@ -1307,7 +1313,7 @@ def api_get_dlp_contracts():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/dlp/incidents")
-def api_get_dlp_incidents(status: Optional[str] = None):
+def api_get_dlp_incidents(status: str | None = None):
     """Retrieves Defect Liability Period breach notices and contractor penalty records."""
     try:
         incidents = get_dlp_incidents(status=status)
@@ -1543,7 +1549,7 @@ def api_simulate_dtc_trip(req: SimulateTripRequest = Body(...)):
 # ==========================================================================
 
 @app.get("/api/green-roads/corridor/{segment_id}")
-def api_get_corridor_carbon(segment_id: str, treatment: Optional[str] = None):
+def api_get_corridor_carbon(segment_id: str, treatment: str | None = None):
     """
     Evaluates lifecycle carbon footprint (LCA) and IRC:SP:98 Green Highway rating
     for a specific corridor comparing chosen treatment vs. conventional reconstruction.

@@ -8,25 +8,22 @@ Lightweight mobile-first reporting pipeline:
 - Issues cryptographic citizen tracking ticket numbers (DEL-311-2026-XXXX)
 """
 
-import os
 import io
 import math
-import time
 import uuid
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
 from PIL import Image
 
-from database.db_manager import (
-    find_nearest_segment,
-    get_pwd_division,
-    create_citizen_pothole_report,
-    get_pothole_by_ticket_id,
-    get_pothole_reports,
-    get_segment_by_id
-)
 from database.audit_chain import get_audit_ledger
+from database.db_manager import (
+    create_citizen_pothole_report,
+    find_nearest_segment,
+    get_pothole_by_ticket_id,
+    get_pwd_division,
+)
 from ml.vision_detector import get_vision_detector
 
 UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads" / "potholes"
@@ -42,7 +39,7 @@ def submit_citizen_pothole(
     citizen_mobile: str = "9876543210",
     road_description: str = "",
     source_channel: str = "delhi_311"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Processes citizen crowdsourcing submission:
     1. Reverses coordinates to nearest Delhi corridor & division
@@ -73,7 +70,7 @@ def submit_citizen_pothole(
         pil_img = Image.open(io.BytesIO(image_bytes))
         detector = get_vision_detector()
         cv_res = detector.analyze_image(pil_img, calibration_mode="auto_perspective")
-    except Exception as e:
+    except Exception:
         cv_res = {
             "is_defect": True,
             "confidence": 0.82,
@@ -203,7 +200,7 @@ def submit_citizen_pothole(
     }
 
 
-def track_citizen_ticket(ticket_id: str) -> Dict[str, Any]:
+def track_citizen_ticket(ticket_id: str) -> dict[str, Any]:
     """
     Returns end-to-end lifecycle status and chronological milestones for a citizen ticket.
     """

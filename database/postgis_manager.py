@@ -4,21 +4,20 @@ Enterprise PostGIS 16 Spatial Engine & Migration Manager for PaveSentry.
 Supports native PostgreSQL 16 + PostGIS extension as well as high-performance GEOS/Shapely
 STRtree spatial indexing for sub-millisecond ST_DWithin and ST_Intersects queries.
 """
-import os
 import json
 import math
+import os
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from shapely.geometry import Point, LineString, Polygon, shape, mapping
-from shapely import wkt
-from shapely.strtree import STRtree
+from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import nearest_points
+from shapely.strtree import STRtree
 
-from database.db_manager import get_all_segments, get_pothole_reports, DB_PATH
+from database.db_manager import get_all_segments, get_pothole_reports
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 POSTGIS_SCHEMA_PATH = ROOT_DIR / "database" / "schema_postgis.sql"
@@ -45,17 +44,17 @@ class PostGISSpatialEngine:
     """
     _instance = None
 
-    def __init__(self, db_url: Optional[str] = None):
+    def __init__(self, db_url: str | None = None):
         self.db_url = db_url or os.environ.get("DATABASE_URL")
         self.is_native_postgis = False
         self.pg_conn = None
 
         # Standalone GEOS/Shapely spatial index
-        self._geometries: List[LineString] = []
-        self._segment_map: Dict[int, Dict[str, Any]] = {}
-        self._spatial_tree: Optional[STRtree] = None
-        self._pothole_geometries: List[Point] = []
-        self._pothole_map: Dict[int, Dict[str, Any]] = []
+        self._geometries: list[LineString] = []
+        self._segment_map: dict[int, dict[str, Any]] = {}
+        self._spatial_tree: STRtree | None = None
+        self._pothole_geometries: list[Point] = []
+        self._pothole_map: dict[int, dict[str, Any]] = []
 
         self._init_connection()
         self._build_spatial_index()
@@ -76,7 +75,7 @@ class PostGISSpatialEngine:
                     if ver:
                         self.is_native_postgis = True
                         print(f"Connected to Native PostGIS: {ver}")
-            except Exception as e:
+            except Exception:
                 self.is_native_postgis = False
                 self.pg_conn = None
 
@@ -108,7 +107,7 @@ class PostGISSpatialEngine:
         if self._geometries:
             self._spatial_tree = STRtree(self._geometries)
 
-    def get_engine_status(self) -> Dict[str, Any]:
+    def get_engine_status(self) -> dict[str, Any]:
         """Returns spatial engine metadata, GIST index status, and coordinate reference systems."""
         return {
             "status": "success",
@@ -132,7 +131,7 @@ class PostGISSpatialEngine:
         lon: float,
         lat: float,
         radius_meters: float = 1500.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         PostGIS ST_DWithin query:
         Finds all road corridors within radius_meters of a given GPS coordinate.
@@ -190,7 +189,7 @@ class PostGISSpatialEngine:
         lon: float,
         lat: float,
         max_distance_m: float = 120.0
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Snaps a vehicle GPS ping (from DTC bus or survey van) to the closest Delhi road corridor.
         Returns snapped coordinates, chainage projection distance, and corridor metadata.
@@ -210,7 +209,7 @@ class PostGISSpatialEngine:
             "is_on_corridor": best["distance_meters"] <= 35.0  # within standard road right-of-way
         }
 
-    def check_boundary_intersections(self, polygon_coords: List[List[float]]) -> List[Dict[str, Any]]:
+    def check_boundary_intersections(self, polygon_coords: list[list[float]]) -> list[dict[str, Any]]:
         """
         PostGIS ST_Intersects query:
         Returns corridors that physically cross or lie within a municipal boundary polygon.
@@ -321,8 +320,8 @@ class PostGISSpatialEngine:
 def get_postgis_engine() -> PostGISSpatialEngine:
     return PostGISSpatialEngine.get_instance()
 
-def query_corridors_radius(lon: float, lat: float, radius_m: float = 1500.0) -> List[Dict[str, Any]]:
+def query_corridors_radius(lon: float, lat: float, radius_m: float = 1500.0) -> list[dict[str, Any]]:
     return get_postgis_engine().query_corridors_within_radius(lon, lat, radius_meters=radius_m)
 
-def snap_gps_to_corridor(lon: float, lat: float, max_dist_m: float = 120.0) -> Optional[Dict[str, Any]]:
+def snap_gps_to_corridor(lon: float, lat: float, max_dist_m: float = 120.0) -> dict[str, Any] | None:
     return get_postgis_engine().snap_telemetry_ping_to_corridor(lon, lat, max_distance_m=max_dist_m)

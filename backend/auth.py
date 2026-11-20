@@ -1,25 +1,18 @@
 import os
 import sys
-import uuid
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
 from pathlib import Path
+from typing import Any
 
-import jwt
 import bcrypt
-from fastapi import Request, HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
-from database.db_manager import (
-    get_user_by_email,
-    get_user_by_id,
-    create_user,
-    update_user_last_login,
-    DB_PATH
-)
+from database.db_manager import DB_PATH, create_user, get_user_by_email, get_user_by_id
 
 # Cryptographically sound secret key (at least 64 bytes for HS256)
 JWT_SECRET_KEY = os.environ.get(
@@ -103,7 +96,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """Generates a signed JWT with expiration timestamp."""
     to_encode = data.copy()
     if expires_delta:
@@ -118,7 +111,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     return encoded_jwt
 
-def decode_access_token(token: str) -> Dict[str, Any]:
+def decode_access_token(token: str) -> dict[str, Any]:
     """Decodes and validates a JWT signature and expiration."""
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
@@ -139,7 +132,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
 # Optional Bearer HTTP security header extractor
 security = HTTPBearer(auto_error=False)
 
-def extract_token_from_request(request: Request, creds: Optional[HTTPAuthorizationCredentials] = None) -> Optional[str]:
+def extract_token_from_request(request: Request, creds: HTTPAuthorizationCredentials | None = None) -> str | None:
     """Extracts JWT token from Authorization header or HttpOnly cookie."""
     if creds and creds.credentials:
         return creds.credentials
@@ -151,7 +144,7 @@ def extract_token_from_request(request: Request, creds: Optional[HTTPAuthorizati
         return cookie_token
     return None
 
-def get_current_user(request: Request, creds: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict[str, Any]:
+def get_current_user(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(security)) -> dict[str, Any]:
     """
     FastAPI Dependency: Authenticates request and returns the authenticated user dictionary.
     Raises HTTP 401 if token is missing or invalid.
@@ -190,19 +183,19 @@ def get_current_user(request: Request, creds: Optional[HTTPAuthorizationCredenti
         "permissions": ROLE_PERMISSIONS.get(canonical_role, {})
     }
 
-def get_optional_user(request: Request, creds: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[Dict[str, Any]]:
+def get_optional_user(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(security)) -> dict[str, Any] | None:
     """FastAPI Dependency: Returns authenticated user if present, or None if guest."""
     try:
         return get_current_user(request, creds)
     except HTTPException:
         return None
 
-def require_role(allowed_roles: List[str]):
+def require_role(allowed_roles: list[str]):
     """
     FastAPI Dependency Factory: Enforces role-based endpoint access.
     Raises HTTP 403 Forbidden if user's role is not in allowed_roles.
     """
-    def role_checker(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    def role_checker(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
         user_role = user.get("role")
         canonical_allowed = [canonicalize_role(r) for r in allowed_roles]
         if user_role not in canonical_allowed:

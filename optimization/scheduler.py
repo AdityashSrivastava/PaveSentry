@@ -1,8 +1,7 @@
-import os
 import sys
-import numpy as np
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 # Ensure UTF-8 output on Windows terminals
 if hasattr(sys.stdout, 'reconfigure'):
@@ -16,6 +15,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
 from database.db_manager import get_all_segments
+
 
 def optimize_maintenance_schedule(annual_budget_inr=100000000, max_km_per_month=15.0, max_months=12, zone=None):
     """

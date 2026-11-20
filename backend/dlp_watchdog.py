@@ -7,17 +7,18 @@ Enforces 3-Year & 2-Year PWD Contractor Warranty Clauses conforming to:
 """
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
-from database.db_manager import get_connection, DB_PATH
+from typing import Any
+
+from database.db_manager import DB_PATH, get_connection
 
 RECTIFICATION_WINDOW_HOURS = 48  # Mandatory 48-hour notice window under CPWD Clause 17
 BASE_DEFECT_PENALTY_INR = 25000.0  # Base penalty per verified recurring pothole during DLP
 ADMIN_SURCHARGE_PCT = 0.25  # 25% administrative & departmental supervision surcharge
 
 def inspect_pothole_for_dlp_breach(
-    pothole_report: Dict[str, Any],
+    pothole_report: dict[str, Any],
     db_path=DB_PATH
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Checks if a newly reported or AI-verified pothole falls within a corridor
     under an active Contractor Defect Liability Period (DLP) warranty.
@@ -139,7 +140,7 @@ def inspect_pothole_for_dlp_breach(
     }
 
 
-def scan_all_open_potholes_for_dlp(db_path=DB_PATH) -> List[Dict[str, Any]]:
+def scan_all_open_potholes_for_dlp(db_path=DB_PATH) -> list[dict[str, Any]]:
     """
     Scans all open reported/verified potholes in the system against active DLP contracts.
     """
@@ -161,7 +162,7 @@ def scan_all_open_potholes_for_dlp(db_path=DB_PATH) -> List[Dict[str, Any]]:
     return breaches
 
 
-def get_active_dlp_contracts(db_path=DB_PATH) -> List[Dict[str, Any]]:
+def get_active_dlp_contracts(db_path=DB_PATH) -> list[dict[str, Any]]:
     """
     Retrieves all contractors and corridors currently covered under active Defect Liability Period warranties.
     """

@@ -1,0 +1,4 @@
+[flake8]
+exclude = .git,.venv,venv,__pycache__,build,dist,Submission,Users,uploads
+max-line-length = 120
+extend-ignore = E501,E402

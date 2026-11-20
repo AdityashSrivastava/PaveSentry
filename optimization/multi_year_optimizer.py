@@ -24,21 +24,22 @@ Advanced Capabilities:
      * Do-Nothing: Zero investment shadow curve.
 """
 
-import sys
 import copy
 import math
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any
+
 import numpy as np
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
 from database.db_manager import get_all_segments
-from optimization.decay import calculate_stress_factor, calculate_remaining_service_life
+from optimization.decay import calculate_remaining_service_life, calculate_stress_factor
 
 
-def _compute_spatial_clusters(projects: List[Dict[str, Any]], year: int) -> List[Dict[str, Any]]:
+def _compute_spatial_clusters(projects: list[dict[str, Any]], year: int) -> list[dict[str, Any]]:
     """
     Groups scheduled corridors in a given year by administrative district and spatial proximity.
     Corridors within ~4.5 km in the same district are clustered together to optimize paving
@@ -48,7 +49,7 @@ def _compute_spatial_clusters(projects: List[Dict[str, Any]], year: int) -> List
         return []
 
     # Group by city_zone
-    zone_groups: Dict[str, List[Dict[str, Any]]] = {}
+    zone_groups: dict[str, list[dict[str, Any]]] = {}
     for p in projects:
         z = p.get("city_zone") or "Central Delhi"
         if z not in zone_groups:
@@ -104,10 +105,10 @@ def optimize_multi_year_capital_plan(
     annual_budget_inr: float = 100000000.0,  # ₹10 Crores default per year
     horizon_years: int = 5,                 # 3 or 5 years
     max_km_per_year: float = 160.0,         # Crew capacity limit
-    zone: Optional[str] = None,
+    zone: str | None = None,
     discount_rate: float = 0.06,            # 6.0% municipal discount rate for NPV
     inflation_rate: float = 0.055           # 5.5% annual material price escalation (CPWD Cost Index)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Executes a multi-year dynamic capital optimization for the Delhi NCT road network.
     Includes material escalation, NPV discounting, spatial clustering, and dynamic Weibull carryover.
@@ -363,10 +364,10 @@ def simulate_multi_year_scenarios(
     annual_budget_inr: float = 100000000.0,
     horizon_years: int = 5,
     max_km_per_year: float = 160.0,
-    zone: Optional[str] = None,
+    zone: str | None = None,
     discount_rate: float = 0.06,
     inflation_rate: float = 0.055
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Multi-Scenario "What-If" Sensitivity Simulator for Municipal Decision-Makers.
     Simulates and compares 3 Master Plan budget scenarios simultaneously:

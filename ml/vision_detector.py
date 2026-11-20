@@ -29,22 +29,20 @@ Capabilities:
 7. High-Visibility HUD Inspection Overlay with metric tags and calibration watermark.
 """
 
-import os
-import sys
-import time
 import math
+import os
+import time
 import uuid
-import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import scipy.ndimage
-import skimage.measure
 import skimage.filters
+import skimage.measure
 import skimage.morphology
+from PIL import Image, ImageDraw, ImageFont
 
 # Optional ONNX Runtime import
 try:
@@ -76,9 +74,9 @@ class CameraCalibration:
         camera_tilt_deg: float = 18.0,
         vfov_deg: float = 54.0,
         hfov_deg: float = 68.0,
-        reference_type: Optional[str] = None,
-        reference_width_mm: Optional[float] = None,
-        manual_gsd_cm_px: Optional[float] = None
+        reference_type: str | None = None,
+        reference_width_mm: float | None = None,
+        manual_gsd_cm_px: float | None = None
     ):
         self.mode = mode
         self.camera_height_m = max(0.4, float(camera_height_m))
@@ -91,11 +89,11 @@ class CameraCalibration:
 
     def compute_region_metrics(
         self,
-        bbox: List[int],
+        bbox: list[int],
         pixel_area: float,
         img_w: int,
         img_h: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Computes metric ground sample distance and physical dimensions for a defect region.
         """
@@ -191,7 +189,7 @@ class PotholeVisionDetector:
     Conforms to IRC:82 and ASTM D6433 standards.
     """
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         self.model_path = model_path
         self.session = None
         if model_path and os.path.exists(model_path) and HAS_ONNX:
@@ -201,7 +199,7 @@ class PotholeVisionDetector:
             except Exception as e:
                 print(f"[PaveSentry CV] ONNX Load Notice: {e}")
 
-    def verify_road_defect(self, img_pil: Image.Image) -> Tuple[bool, float, str, str]:
+    def verify_road_defect(self, img_pil: Image.Image) -> tuple[bool, float, str, str]:
         """
         Verifies whether an uploaded photograph is an authentic road pavement defect.
         Rejects non-road images (grass, sky, indoor scenes, human portraits, vehicle panels).
@@ -276,7 +274,7 @@ class PotholeVisionDetector:
         aspect_ratio: float,
         depth_mm: float,
         edge_density: float
-    ) -> Tuple[str, str, int, str]:
+    ) -> tuple[str, str, int, str]:
         """
         Classifies distress into ASTM D6433 standard taxonomy:
         - pothole
@@ -357,8 +355,8 @@ class PotholeVisionDetector:
     def segment_defects(
         self,
         img_pil: Image.Image,
-        calibration: Optional[CameraCalibration] = None
-    ) -> List[Dict[str, Any]]:
+        calibration: CameraCalibration | None = None
+    ) -> list[dict[str, Any]]:
         """
         Segments all pavement defects, applies photogrammetric scale calibration,
         and assigns ASTM D6433 classifications.
@@ -527,9 +525,9 @@ class PotholeVisionDetector:
     def generate_annotated_image(
         self,
         img_pil: Image.Image,
-        defects: List[Dict[str, Any]],
+        defects: list[dict[str, Any]],
         calibration_preset: str = "Handheld Survey",
-        output_filename: Optional[str] = None
+        output_filename: str | None = None
     ) -> str:
         """
         Draws high-visibility HUD overlay with metric tags, reticles, and calibration banner.
@@ -620,10 +618,10 @@ class PotholeVisionDetector:
         calibration_mode: str = "auto_perspective",
         camera_height_m: float = 1.35,
         camera_tilt_deg: float = 18.0,
-        reference_type: Optional[str] = None,
-        reference_width_mm: Optional[float] = None,
-        manual_gsd_cm_px: Optional[float] = None
-    ) -> Dict[str, Any]:
+        reference_type: str | None = None,
+        reference_width_mm: float | None = None,
+        manual_gsd_cm_px: float | None = None
+    ) -> dict[str, Any]:
         """
         Executes complete Computer Vision Pavement Characterization pipeline:
         1. Defect verification & non-road rejection
@@ -699,7 +697,7 @@ class PotholeVisionDetector:
         total_astm_deduct = sum(d["astm_deduct_points"] for d in defects)
 
         # Distress category counts
-        breakdown: Dict[str, int] = {}
+        breakdown: dict[str, int] = {}
         for d in defects:
             cls = d["class_name"]
             breakdown[cls] = breakdown.get(cls, 0) + 1
@@ -757,7 +755,7 @@ class PotholeVisionDetector:
         calibration_mode: str = "camera_geometry",
         camera_height_m: float = 1.20,
         camera_tilt_deg: float = 14.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Processes continuous dashcam / mobile moving video streams (.mp4, .mov, .avi, .webm):
         - Samples keyframes at regular intervals (default 2 FPS)
@@ -783,7 +781,7 @@ class PotholeVisionDetector:
             camera_tilt_deg=camera_tilt_deg
         )
 
-        tracked_defects: List[Dict[str, Any]] = []
+        tracked_defects: list[dict[str, Any]] = []
         # Each tracked item: {
         #   "track_id": int,
         #   "class_name": str,
@@ -941,7 +939,7 @@ class PotholeVisionDetector:
 
 
 # Global detector singleton
-_global_detector: Optional[PotholeVisionDetector] = None
+_global_detector: PotholeVisionDetector | None = None
 
 def get_vision_detector() -> PotholeVisionDetector:
     global _global_detector

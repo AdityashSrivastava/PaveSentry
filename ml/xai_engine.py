@@ -3,15 +3,15 @@ Explainable AI (XAI) & Feature Attribution Engine.
 Uses TreeSHAP (SHapley Additive exPlanations) to explain Machine Learning risk predictions.
 Conforms to CSIR-CRRI, Delhi PWD & Central Vigilance Commission (CVC) Audit Transparency Standards.
 """
-from typing import Dict, Any, List, Optional
-from pathlib import Path
+from typing import Any
+
 import joblib
 import numpy as np
 import pandas as pd
 import shap
 
 from database.db_manager import get_all_segments, get_segment_by_id
-from ml.train_models import extract_features, MODELS_DIR
+from ml.train_models import MODELS_DIR, extract_features
 
 # Feature Metadata & Engineering Descriptions
 FEATURE_METADATA = {
@@ -159,7 +159,7 @@ class ExplainableAIEngine:
             cls._instance = ExplainableAIEngine()
         return cls._instance
 
-    def explain_corridor(self, segment_id: str) -> Dict[str, Any]:
+    def explain_corridor(self, segment_id: str) -> dict[str, Any]:
         """
         Computes local SHAP waterfall attribution for a specific corridor.
         Returns percentage influences, directional drivers, and human engineering justification.
@@ -254,7 +254,7 @@ class ExplainableAIEngine:
             "audit_justification": audit_justification
         }
 
-    def get_global_feature_importance(self) -> Dict[str, Any]:
+    def get_global_feature_importance(self) -> dict[str, Any]:
         """
         Computes network-wide global feature importance using mean absolute SHAP values.
         Identifies the primary macro drivers of pavement failure across all Delhi corridors.
@@ -312,8 +312,8 @@ class ExplainableAIEngine:
     def simulate_counterfactual(
         self,
         segment_id: str,
-        overrides: Dict[str, float]
-    ) -> Dict[str, Any]:
+        overrides: dict[str, float]
+    ) -> dict[str, Any]:
         """
         Simulates hypothetical engineering interventions (e.g. diverting 50% heavy traffic,
         installing monsoon drain sumps, or sealing cracks) and measures the resulting drop in risk.
@@ -363,11 +363,11 @@ class ExplainableAIEngine:
         }
 
 
-def explain_corridor_risk(segment_id: str) -> Dict[str, Any]:
+def explain_corridor_risk(segment_id: str) -> dict[str, Any]:
     return ExplainableAIEngine.get_instance().explain_corridor(segment_id)
 
-def get_global_shap_importance() -> Dict[str, Any]:
+def get_global_shap_importance() -> dict[str, Any]:
     return ExplainableAIEngine.get_instance().get_global_feature_importance()
 
-def simulate_intervention_counterfactual(segment_id: str, overrides: Dict[str, float]) -> Dict[str, Any]:
+def simulate_intervention_counterfactual(segment_id: str, overrides: dict[str, float]) -> dict[str, Any]:
     return ExplainableAIEngine.get_instance().simulate_counterfactual(segment_id, overrides)

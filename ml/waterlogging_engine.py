@@ -6,10 +6,10 @@ IRC:SP:42 (Guidelines on Road Drainage), and Delhi PWD Monsoon Flood Action Plan
 """
 
 import math
-import time
-from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
-from database.db_manager import get_segment_by_id, get_all_segments
+from typing import Any
+
+from database.db_manager import get_all_segments, get_segment_by_id
 
 # ==============================================================================
 # Delhi NCT Historical Waterlogging Underpasses & Low-Lying Vulnerability Hotspots
@@ -170,7 +170,7 @@ def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) ->
     return r * c
 
 
-def find_nearest_waterlogging_hotspot(lat: float, lon: float) -> Tuple[Dict[str, Any], float]:
+def find_nearest_waterlogging_hotspot(lat: float, lon: float) -> tuple[dict[str, Any], float]:
     """Finds the closest waterlogging underpass hotspot and distance in km."""
     best_hotspot = DELHI_WATERLOGGING_HOTSPOTS[0]
     min_dist = float("inf")
@@ -184,7 +184,7 @@ def find_nearest_waterlogging_hotspot(lat: float, lon: float) -> Tuple[Dict[str,
     return best_hotspot, round(min_dist, 2)
 
 
-def calculate_waterlogging_risk(segment_id: str) -> Dict[str, Any]:
+def calculate_waterlogging_risk(segment_id: str) -> dict[str, Any]:
     """
     Computes comprehensive Monsoon Waterlogging & Hydroplaning Vulnerability Index
     for a specific Delhi arterial corridor based on topography, drainage, and soaked CBR.
@@ -317,7 +317,7 @@ def calculate_waterlogging_risk(segment_id: str) -> Dict[str, Any]:
     }
 
 
-def get_network_waterlogging_summary() -> Dict[str, Any]:
+def get_network_waterlogging_summary() -> dict[str, Any]:
     """
     Returns network-wide waterlogging vulnerability statistics and top hotspots across Delhi NCT.
     """

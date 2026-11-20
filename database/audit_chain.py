@@ -11,7 +11,7 @@ import sqlite3
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 
 DB_PATH = Path(__file__).resolve().parent / "road_maintenance.db"
 
@@ -175,8 +175,8 @@ class CryptographicAuditLedger:
         entity_id: str,
         actor: str,
         division: str,
-        payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """Internal helper to insert a block on an active connection."""
         cursor = conn.cursor()
         cursor.execute("SELECT block_index, block_hash FROM audit_ledger ORDER BY block_index DESC LIMIT 1")
@@ -214,15 +214,15 @@ class CryptographicAuditLedger:
         entity_id: str,
         actor: str,
         division: str,
-        payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Public method: Append an unalterable, SHA-256 hashed event to the audit ledger.
         """
         with get_db_connection(self.db_path) as conn:
             return self._insert_block_internal(conn, event_type, entity_id, actor, division, payload)
 
-    def get_chain(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_chain(self, limit: int = 50) -> list[dict[str, Any]]:
         """Returns recent blocks in the audit chain ordered by block_index descending."""
         with get_db_connection(self.db_path) as conn:
             cursor = conn.cursor()
@@ -254,7 +254,7 @@ class CryptographicAuditLedger:
                 })
             return result
 
-    def verify_chain_integrity(self) -> Dict[str, Any]:
+    def verify_chain_integrity(self) -> dict[str, Any]:
         """
         Cryptographic validation routine:
         Iterates from Genesis (block 0) to head, verifying:
@@ -354,7 +354,7 @@ class CryptographicAuditLedger:
                 "statutory_standard": "CAG Section 18 / CVC Vigilance Guidelines for Public Infrastructure Works"
             }
 
-    def generate_cag_audit_certificate(self) -> Dict[str, Any]:
+    def generate_cag_audit_certificate(self) -> dict[str, Any]:
         """
         Generates a formal Comptroller & Auditor General (CAG) Cryptographic Audit Certificate.
         """
@@ -401,7 +401,7 @@ class CryptographicAuditLedger:
 
 
 # Singleton accessor
-_audit_ledger_instance: Optional[CryptographicAuditLedger] = None
+_audit_ledger_instance: CryptographicAuditLedger | None = None
 
 def get_audit_ledger() -> CryptographicAuditLedger:
     global _audit_ledger_instance

@@ -9,7 +9,8 @@ Models pavement degradation across 3-year and 5-year horizons using:
 """
 
 import math
-from typing import Dict, List, Optional, Any
+from typing import Any
+
 import numpy as np
 
 # Pavement Condition States for Markov Chain
@@ -46,7 +47,7 @@ def calculate_weibull_decay(
     initial_iri: float,
     stress_factor: float,
     horizon_years: int = 5
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Models continuous PCI and IRI deterioration using calibrated Weibull hazard survival:
     PCI(t) = PCI_0 * exp(-(t / eta)^beta)
@@ -105,7 +106,7 @@ def calculate_weibull_decay(
     return trajectory
 
 
-def calculate_markov_transitions(stress_factor: float, horizon_years: int = 5) -> Dict[str, Any]:
+def calculate_markov_transitions(stress_factor: float, horizon_years: int = 5) -> dict[str, Any]:
     """
     Constructs a 5-state Markov Chain transition matrix for pavement states:
     [Excellent, Good, Fair, Poor, Critical].
@@ -140,7 +141,7 @@ def calculate_markov_transitions(stress_factor: float, horizon_years: int = 5) -
     }
 
 
-def simulate_cost_of_inaction(segment: dict, horizon_years: int = 5) -> Dict[str, Any]:
+def simulate_cost_of_inaction(segment: dict, horizon_years: int = 5) -> dict[str, Any]:
     """
     Simulates the exact financial penalty and cost escalation of delaying maintenance
     from Year 1 to Year 2, Year 3, Year 4, and Year 5.
@@ -236,7 +237,7 @@ def simulate_cost_of_inaction(segment: dict, horizon_years: int = 5) -> Dict[str
     }
 
 
-def simulate_network_cost_of_inaction(segments: List[dict], horizon_years: int = 5) -> Dict[str, Any]:
+def simulate_network_cost_of_inaction(segments: list[dict], horizon_years: int = 5) -> dict[str, Any]:
     """
     Aggregates the Cost of Inaction across all candidate segments in the Delhi NCT network.
     Shows the total municipal financial penalty of deferring the entire capital plan.
@@ -298,7 +299,7 @@ def simulate_network_cost_of_inaction(segments: List[dict], horizon_years: int =
     }
 
 
-def calculate_remaining_service_life(segment: dict) -> Dict[str, Any]:
+def calculate_remaining_service_life(segment: dict) -> dict[str, Any]:
     """
     Computes Remaining Service Life (RSL in Years) and IRC:37:2018 Structural Fatigue
     Capacity for a road segment based on traffic load, pavement age, and condition distress.

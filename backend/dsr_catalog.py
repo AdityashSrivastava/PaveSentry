@@ -3,7 +3,7 @@ Delhi Schedule of Rates (CPWD / Delhi PWD DSR 2023-24) Engine.
 Itemized Sub-Head 16 (Road Work) Database, Rate Analysis & Bill of Quantities (BOQ) Generator.
 Conforms to CPWD Specifications, Delhi PWD Works Manual & IRC:82 / IRC:SP:81 Standards.
 """
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 DELHI_CPWD_COST_INDEX = 1.085  # CPWD Cost Index for Delhi (8.5% over base DSR 2023)
 CONTRACTOR_PROFIT_OVERHEAD_PCT = 0.10  # Standard CPWD 10% Contractor Overhead & Profit
@@ -98,7 +98,7 @@ CPWD_DSR_ITEMS = {
 }
 
 
-def get_all_dsr_items() -> List[Dict[str, Any]]:
+def get_all_dsr_items() -> list[dict[str, Any]]:
     """Returns the full master catalog of CPWD DSR Sub-Head 16 road items with Delhi Cost Index adjusted rates."""
     items = []
     for code, item in CPWD_DSR_ITEMS.items():
@@ -117,7 +117,7 @@ def generate_bill_of_quantities(
     lanes: int,
     treatment_type: str,
     city_zone: str = "Central Delhi"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Generates an authentic Delhi PWD Bill of Quantities (BOQ) with CPWD DSR 2023 item codes.
     Calculates physical quantities based on corridor geometry and applies Delhi regional cost index.
@@ -221,7 +221,7 @@ def generate_bill_of_quantities(
     }
 
 
-def _create_boq_item(code: str, quantity: float) -> Dict[str, Any]:
+def _create_boq_item(code: str, quantity: float) -> dict[str, Any]:
     master = CPWD_DSR_ITEMS.get(code, {
         "item_code": code,
         "description": "Custom Pavement Item",

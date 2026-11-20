@@ -1,16 +1,23 @@
-import io
 import csv
+import io
 from datetime import datetime
-from pathlib import Path
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 
-from reportlab.lib.pagesizes import A4, landscape
+import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.pdfgen import canvas
+from reportlab.platypus import (
+    KeepTogether,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+
 
 def format_currency_inr(val):
     if val is None or val == "":
@@ -449,7 +456,7 @@ class NumberedCanvas(canvas.Canvas):
         self.line(30, 28, 812, 28)
         
         # Footer text
-        footer_text = f"Government of NCT of Delhi · PWD Road Infrastructure Division · CSIR-CRRI Audit Compliance Ref: CRRI/AUD/2026/PS-04"
+        footer_text = "Government of NCT of Delhi · PWD Road Infrastructure Division · CSIR-CRRI Audit Compliance Ref: CRRI/AUD/2026/PS-04"
         self.drawString(30, 16, footer_text)
         page_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(812, 16, page_str)
@@ -589,7 +596,7 @@ def generate_executive_tender_pdf(scheduled_segments, summary_info=None, divisio
     story.append(Spacer(1, 2))
     
     # Meta Strip: Tender Ref, Issue Date, Compliance Standards
-    nit_ref = f"NIT/PWD-DL/2026/R-042"
+    nit_ref = "NIT/PWD-DL/2026/R-042"
     today_str = datetime.now().strftime("%d-%b-%Y")
     zone_label = division_name if division_name and division_name != "all" else "Delhi NCT Arterial Network (All Divisions)"
     
@@ -597,7 +604,7 @@ def generate_executive_tender_pdf(scheduled_segments, summary_info=None, divisio
         [
             Paragraph(f"<b>Tender Notice No:</b> {nit_ref}", meta_style),
             Paragraph(f"<b>Date of Notification:</b> {today_str}", meta_style),
-            Paragraph(f"<b>Statutory Norms:</b> IRC:82-2015 · IRC:SP:81-2008 · IRC:37", meta_style),
+            Paragraph("<b>Statutory Norms:</b> IRC:82-2015 · IRC:SP:81-2008 · IRC:37", meta_style),
             Paragraph(f"<b>Administrative Territory:</b> {zone_label}", meta_style)
         ]
     ]

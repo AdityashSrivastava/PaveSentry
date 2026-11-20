@@ -1,19 +1,18 @@
-import io
 import csv
+import io
 import json
-import uuid
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any
 
 from database.db_manager import (
-    get_connection,
+    DB_PATH,
     find_nearest_segment,
+    get_connection,
     log_survey_upload,
     update_segment_condition,
-    DB_PATH
 )
 from ml.predict import run_predictions_and_update_db
+
 
 def calculate_astm_pci(iri: float, rut_depth_mm: float, crack_density_pct: float, pothole_count: int) -> float:
     """
@@ -28,7 +27,7 @@ def calculate_astm_pci(iri: float, rut_depth_mm: float, crack_density_pct: float
     pci = 100.0 - (deduct_iri + deduct_rut + deduct_crack + deduct_potholes)
     return round(max(5.0, min(100.0, pci)), 1)
 
-def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
+def parse_survey_csv(file_content: bytes) -> list[dict[str, Any]]:
     """
     Parses CSV exported by ROMDAS, laser profilometers, or smartphone roughness meters.
     Normalizes column names flexibly to handle varying government survey van outputs.
@@ -60,14 +59,14 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
         # Extract Segment ID
         seg_id = None
         for k in ["segment_id", "corridor_id", "seg_id", "road_id", "id"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 seg_id = norm_row[k].strip()
                 break
 
         # Extract Coordinates
         lat = None
         for k in ["latitude", "lat", "start_lat", "gps_lat", "y"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 try:
                     lat = float(norm_row[k])
                     break
@@ -76,7 +75,7 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
 
         lon = None
         for k in ["longitude", "lon", "lng", "start_lon", "gps_lon", "x"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 try:
                     lon = float(norm_row[k])
                     break
@@ -86,7 +85,7 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
         # Extract IRI
         iri = 3.2
         for k in ["iri", "iri_m_km", "iri_roughness", "roughness_iri", "roughness"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 try:
                     iri = float(norm_row[k])
                     break
@@ -96,7 +95,7 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
         # Extract Rut Depth
         rut_mm = 6.0
         for k in ["rut_depth_mm", "rutting_mm", "rut_mm", "rutting", "rut_depth"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 try:
                     rut_mm = float(norm_row[k])
                     break
@@ -106,7 +105,7 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
         # Extract Cracking
         crack_pct = 5.0
         for k in ["crack_density_pct", "crack_pct", "cracking_pct", "cracks_pct", "cracking"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 try:
                     crack_pct = float(norm_row[k])
                     break
@@ -116,7 +115,7 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
         # Extract Potholes
         potholes = 0
         for k in ["pothole_count", "potholes", "potholes_count", "active_potholes"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 try:
                     potholes = int(float(norm_row[k]))
                     break
@@ -126,7 +125,7 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
         # Extract PCI (or compute if absent)
         pci = None
         for k in ["pci", "pavement_condition_index"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 try:
                     pci = float(norm_row[k])
                     break
@@ -138,7 +137,7 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
         # Survey Date
         survey_date = datetime.utcnow().strftime("%Y-%m-%d")
         for k in ["survey_date", "date", "timestamp"]:
-            if k in norm_row and norm_row[k]:
+            if norm_row.get(k):
                 survey_date = norm_row[k].strip()[:10]
                 break
 
@@ -156,14 +155,14 @@ def parse_survey_csv(file_content: bytes) -> List[Dict[str, Any]]:
 
     return records
 
-def parse_survey_geojson(file_content: bytes) -> List[Dict[str, Any]]:
+def parse_survey_geojson(file_content: bytes) -> list[dict[str, Any]]:
     """
     Parses GeoJSON exported by ARRB Hawkeye, Trimble, or GIS field mapping vans.
     """
     try:
         data = json.loads(file_content.decode("utf-8"))
     except Exception as e:
-        raise ValueError(f"Invalid GeoJSON content: {str(e)}")
+        raise ValueError(f"Invalid GeoJSON content: {e!s}")
 
     features = data.get("features", [])
     records = []
@@ -217,7 +216,7 @@ def ingest_survey_file(
     uploaded_by: str,
     division: str,
     db_path=DB_PATH
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     High-level ingestion pipeline for field survey files (CSV or GeoJSON).
     1. Parses records.

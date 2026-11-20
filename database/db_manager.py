@@ -1,10 +1,9 @@
-import os
-import sqlite3
 import json
+import sqlite3
 import uuid
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Any
 
 DB_DIR = Path(__file__).resolve().parent
 DB_PATH = DB_DIR / "road_maintenance.db"
@@ -346,8 +345,7 @@ def get_network_stats(db_path=DB_PATH, zone=None):
 # ==========================================================================
 
 import math
-import uuid
-from datetime import datetime
+
 
 def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Computes great-circle distance between two GPS coordinates in kilometers."""
@@ -391,8 +389,7 @@ def find_nearest_segment(lat: float, lon: float, max_distance_km: float = 5.0, d
                     if len(pt) >= 2:
                         # GeoJSON is [lon, lat]
                         d_pt = haversine_distance_km(lat, lon, pt[1], pt[0])
-                        if d_pt < local_min:
-                            local_min = d_pt
+                        local_min = min(local_min, d_pt)
             except Exception:
                 pass
 
@@ -987,7 +984,7 @@ def get_work_order_by_id(wo_id: str, db_path=DB_PATH):
     return r
 
 
-def create_work_order(wo_data: Dict[str, Any], db_path=DB_PATH):
+def create_work_order(wo_data: dict[str, Any], db_path=DB_PATH):
     """Creates a new municipal work order and stores it in the database."""
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -1099,7 +1096,7 @@ def update_work_order_stage(wo_id: str, new_stage: str, updated_by: str = None, 
     return get_work_order_by_id(wo_id, db_path=db_path)
 
 
-def get_kanban_summary_stats(zone: str = None, db_path=DB_PATH) -> Dict[str, Any]:
+def get_kanban_summary_stats(zone: str = None, db_path=DB_PATH) -> dict[str, Any]:
     """Computes real-time KPI metrics for the Contractor Kanban & SLA Dashboard."""
     conn = get_connection(db_path)
     cursor = conn.cursor()

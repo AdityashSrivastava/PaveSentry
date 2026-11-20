@@ -6,12 +6,10 @@ Quantifies embodied lifecycle CO2e emissions avoided via Cold In-Place Recycling
 Warm Mix Asphalt (WMA), and Micro-Surfacing vs. conventional Hot Mix Asphalt (HMA) reconstruction,
 computes vehicle operational fuel savings via roughness reduction, and generates Green Highway Tender Certifications.
 """
-from typing import Dict, Any, List, Optional
-import math
 import time
-from pathlib import Path
+from typing import Any
 
-from database.db_manager import get_segment_by_id, get_all_segments
+from database.db_manager import get_all_segments, get_segment_by_id
 
 # ==============================================================================
 # IRC:SP:98 & MoRTH Emission Factors (kg CO2e per lane-km per mm thickness / unit)
@@ -90,8 +88,8 @@ class GreenRoadsCalculator:
     @staticmethod
     def calculate_corridor_carbon_footprint(
         segment_id: str,
-        selected_treatment: Optional[str] = None
-    ) -> Dict[str, Any]:
+        selected_treatment: str | None = None
+    ) -> dict[str, Any]:
         """
         Evaluates lifecycle carbon footprint for a road corridor comparing chosen treatment
         against full conventional hot-mix reconstruction under IRC:SP:98-2020.
@@ -236,7 +234,7 @@ class GreenRoadsCalculator:
         }
 
     @staticmethod
-    def calculate_all_treatments_comparison(segment_id: str) -> List[Dict[str, Any]]:
+    def calculate_all_treatments_comparison(segment_id: str) -> list[dict[str, Any]]:
         """Compares all 6 maintenance technologies side-by-side for a specific corridor."""
         options = []
         for treatment_name in EMISSION_FACTORS:
@@ -258,7 +256,7 @@ class GreenRoadsCalculator:
         return options
 
     @staticmethod
-    def calculate_network_green_summary(scheduled_corridors: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    def calculate_network_green_summary(scheduled_corridors: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         """
         Aggregates network-wide ESG sustainability metrics across all scheduled corridors
         in the municipal master plan.
@@ -303,7 +301,7 @@ class GreenRoadsCalculator:
         }
 
     @staticmethod
-    def generate_green_certificate(segment_id: str) -> Dict[str, Any]:
+    def generate_green_certificate(segment_id: str) -> dict[str, Any]:
         """Generates an official IRC:SP:98 Green Highway Compliance Certificate."""
         data = GreenRoadsCalculator.calculate_corridor_carbon_footprint(segment_id)
         
@@ -336,14 +334,14 @@ class GreenRoadsCalculator:
         return cert
 
 
-def calculate_corridor_carbon(segment_id: str, treatment: Optional[str] = None) -> Dict[str, Any]:
+def calculate_corridor_carbon(segment_id: str, treatment: str | None = None) -> dict[str, Any]:
     return GreenRoadsCalculator.calculate_corridor_carbon_footprint(segment_id, treatment)
 
-def get_treatment_options_comparison(segment_id: str) -> List[Dict[str, Any]]:
+def get_treatment_options_comparison(segment_id: str) -> list[dict[str, Any]]:
     return GreenRoadsCalculator.calculate_all_treatments_comparison(segment_id)
 
-def get_network_green_esg_summary() -> Dict[str, Any]:
+def get_network_green_esg_summary() -> dict[str, Any]:
     return GreenRoadsCalculator.calculate_network_green_summary()
 
-def get_green_certificate(segment_id: str) -> Dict[str, Any]:
+def get_green_certificate(segment_id: str) -> dict[str, Any]:
     return GreenRoadsCalculator.generate_green_certificate(segment_id)
