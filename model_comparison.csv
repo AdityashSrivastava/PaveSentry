@@ -1,4 +1,0 @@
-Model,Accuracy,Precision,Recall,F1,ROC-AUC,Improvement_Over_Baseline
-Baseline (Logistic Regression),88.57%,90.16%,88.57%,89.26%,0.9824,0.00%
-Baseline (Decision Tree d=5),98.57%,98.75%,98.57%,98.58%,0.9921,-7.14%
-Our Random Forest (PaveSentry),91.43%,91.86%,91.43%,91.61%,0.9920,+2.86%

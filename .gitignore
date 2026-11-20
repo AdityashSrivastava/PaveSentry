@@ -60,12 +60,14 @@ htmlcov/
 *.pfx
 *.p12
 
-# Runtime SQLite databases & dynamic state
+# Runtime SQLite databases, migration dumps & dynamic state
 *.db
 *.sqlite
 *.sqlite3
 *.db-journal
 *.db-wal
+database/postgis_dump.sql
+*.sql.dump
 
 # User-uploaded files (keep folder structure intact with .gitkeep)
 uploads/potholes/*
@@ -81,9 +83,24 @@ exported_models/
 Submission/
 Users/
 
-# Temporary UI QA screenshots
+# Temporary UI QA screenshots & media dumps
 dashboard_screen.png
 full_workspace_analytics.png
 full_workspace_analytics_light.png
 view_citizen_portal_light.png
 workspace_screen_light.png
+temp_test_stream.mp4
+*.mp4
+
+# Scratch scripts, duplicate datasets & evaluation CSV dumps
+update_models_from_zip.py
+generate_report_pdf.py
+ppt_criteria.md
+evaluation.md
+test_phase_a_b.py
+delhi_road_dataset.csv
+model_comparison.csv
+model_evaluation_results.csv
+sample_predictions.csv
+inspect_shapes.py
+*.pptx
