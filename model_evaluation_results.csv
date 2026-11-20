@@ -1,0 +1,4 @@
+model_name,dataset,train_samples,test_samples,accuracy,precision,recall,f1,roc_auc,mae,rmse,r2
+Pothole Risk Classifier (Random Forest),Delhi NCT Road Maintenance (CSIR-CRRI/OSM/Open-Meteo),280,70,91.43,91.86,91.43,91.61,0.992,N/A,N/A,N/A
+Time-to-Failure Regressor (Random Forest),Delhi NCT Road Maintenance (CSIR-CRRI/OSM/Open-Meteo),280,70,N/A,N/A,N/A,N/A,N/A,1.7891,4.0806,0.9858
+Reactive Repair Cost Regressor (Random Forest),Delhi NCT Road Maintenance (CSIR-CRRI/OSM/Open-Meteo),280,70,N/A,N/A,N/A,N/A,N/A,8834458.04,13421488.94,0.9904

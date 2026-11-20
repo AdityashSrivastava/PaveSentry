@@ -1,0 +1,37 @@
+# Version control & metadata
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Python caches & bytecode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-wheel-metadata/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Sensitive credentials & environment files
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Temporary artifacts
+temp/
+tmp/
+*.zip
+uploads/potholes/*
+!uploads/potholes/.gitkeep

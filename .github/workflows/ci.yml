@@ -1,0 +1,168 @@
+name: PaveSentry CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  PYTHON_VERSION: "3.11"
+  SECRET_KEY: "ci_test_secret_key_delhi_pavesentry_2026"
+  ENVIRONMENT: "test"
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Job 1: Code Linting, Formatting & AST Syntax Verification
+  # ----------------------------------------------------------------------------
+  lint-and-syntax:
+    name: Linting & Syntax Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 ruff
+
+      - name: Python Bytecode Compile Check
+        run: |
+          python -m compileall backend database ml optimization
+
+      - name: Flake8 Critical Errors Check
+        run: |
+          # Stop build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Ruff Code Quality Lint
+        run: |
+          ruff check backend database ml optimization --ignore E501,E402
+
+  # ----------------------------------------------------------------------------
+  # Job 2: Automated Pytest Suite across Phases A through G
+  # ----------------------------------------------------------------------------
+  test-suite:
+    name: Automated Regression Suite (Phases A-G)
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install System Geospatial & Vision Libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgeos-dev \
+            libgl1 \
+            libglib2.0-0
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run Phase A Verification (Computer Vision)
+        run: |
+          python test_phase_a_complete.py
+
+      - name: Run Phase B Verification (Multi-Year Capital Planning)
+        run: |
+          pytest -v test_phase_b_complete.py
+
+      - name: Run Phase C Verification (Contractor SLA & Kanban)
+        run: |
+          pytest -v test_phase_c_complete.py
+
+      - name: Run Phase D Verification (Explainable AI & TreeSHAP)
+        run: |
+          pytest -v test_phase_d_complete.py
+
+      - name: Run Phase E Verification (PostGIS & Fleet Telemetry)
+        run: |
+          pytest -v test_phase_e_complete.py
+
+      - name: Run Phase F Verification (IRC:SP:98 Green Roads)
+        run: |
+          pytest -v test_phase_f_complete.py
+
+      - name: Run Phase G Master Verification Suite
+        run: |
+          pytest -v test_phase_g_complete.py
+
+  # ----------------------------------------------------------------------------
+  # Job 3: Security & Dependency Vulnerability Audit
+  # ----------------------------------------------------------------------------
+  security-audit:
+    name: Dependency Security & SAST Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Security Scanners
+        run: |
+          pip install bandit
+
+      - name: Bandit Static Application Security Testing (SAST)
+        run: |
+          # Scan backend code for common security pitfalls (skips test files)
+          bandit -r backend/ optimization/ -ll -ii --exclude '*/test_*' || true
+
+  # ----------------------------------------------------------------------------
+  # Job 4: Docker Container Build & Compose Validation
+  # ----------------------------------------------------------------------------
+  docker-validation:
+    name: Docker Build & Compose Config Validation
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose config
+
+      - name: Test Dockerfile Build & Layer Caching
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: pavesentry-api:ci-test
+          target: runner

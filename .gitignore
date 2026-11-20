@@ -1,12 +1,14 @@
+# ==============================================================================
+# PaveSentry Git Exclusion & Cyber-Security Quarantine Rules (.gitignore)
+# ==============================================================================
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
-# Distribution / packaging
+# C extensions & packaging
 .Python
 build/
 develop-eggs/
@@ -34,7 +36,7 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDE / Editor files
+# IDE / Editor metadata
 .vscode/
 .idea/
 *.sublime-project
@@ -43,5 +45,45 @@ venv.bak/
 Thumbs.db
 .rocketride/
 
-# Logs
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
 *.log
+
+# Sensitive credentials & environment secrets (Never commit!)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Runtime SQLite databases & dynamic state
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+
+# User-uploaded files (keep folder structure intact with .gitkeep)
+uploads/potholes/*
+!uploads/potholes/.gitkeep
+uploads/*
+!uploads/potholes/
+
+# Redundant archives & duplicate export folders
+exported_models.zip
+exported_models/
+
+# Local submission packages (contains personal PII, duplicate code)
+Submission/
+Users/
+
+# Temporary UI QA screenshots
+dashboard_screen.png
+full_workspace_analytics.png
+full_workspace_analytics_light.png
+view_citizen_portal_light.png
+workspace_screen_light.png
